@@ -100,6 +100,7 @@ try {
 }
 
 function initGPS() {
+    alert("GPS INIT STARTED");
 
 console.log('[GPS] Starting...');
 
