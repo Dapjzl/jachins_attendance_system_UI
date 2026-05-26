@@ -1,5 +1,3 @@
-alert("SCRIPT STARTED");
-console.log("SCRIPT STARTED");
 // ── CONFIG ──────────────────────────────────────────
 const APP_URL = 'https://script.google.com/macros/s/AKfycbzw7WLhirxNQTbYHiCD24ese2-LjPjRnc3UY4SlF2MT0xN7Uau_SAHw_05GndV8QSA/exec';
 
@@ -265,14 +263,22 @@ async function submitAction(action) {
       userAgent: navigator.userAgent
     };
 
-    const response = fetch(APP_URL, {
-        method: 'POST',
-        mode: 'cors',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      })
+    
+    
+const response = await fetch(APP_URL, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'text/plain;charset=utf-8'
+  },
+  body: JSON.stringify(payload)
+});
+
+const data = await response.json();
+
+console.log("SERVER RESPONSE:", data);
+
+
+
 
     const data = await response.json();
 
