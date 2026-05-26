@@ -4,6 +4,15 @@ const APP_URL = 'https://script.google.com/macros/s/AKfycbzw7WLhirxNQTbYHiCD24es
 let gpsData = null;
 let userIP = null;
 
+
+const params = new URLSearchParams(window.location.search);
+
+const employeeToken = params.get('token') || '';
+
+console.log('TOKEN:', employeeToken);
+
+
+
 // ── CLOCK ───────────────────────────────────────────
 function updateClock() {
   const now = new Date();
@@ -337,6 +346,8 @@ function showAlert(type, msg) {
 // ── START ──────────────────────────────────────────
 
 window.addEventListener('load', () => {
+
+document.getElementById('token').value = employeeToken;
 
 setGPS(
   'waiting',
