@@ -4,25 +4,40 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="Permissions-Policy" content="geolocation=(self)">
-  <title><?= companyName ?> — Attendance</title>
+  
+  <title>JACHINSGROUP — Attendance</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="stylesheet" href="style.css">
-  <script src="app.js"></script>
+
   <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
 </head>
-<body>
 
+<body>
+    <h1>TEST</h1>
+    <script>
+    alert("WORKING");
+    </script>
   <!-- Header -->
   <div class="header">
+
     <div class="logo-wrap">
-      <img 
-          src="https://drive.google.com/uc?export=view&id=1Iz9eUhCm2Ua-EXbq_pQDwSiBwjvFzKxW"
-          alt="Company Logo"
-          referrerpolicy="no-referrer"
-          style="width:48px;height:48px;object-fit:contain;border-radius:8px;">
+      <img
+        src="https://drive.google.com/uc?export=view&id=1Iz9eUhCm2Ua-EXbq_pQDwSiBwjvFzKxW"
+        alt="Company Logo"
+        referrerpolicy="no-referrer"
+        style="width:48px;height:48px;object-fit:contain;border-radius:8px;"
+      >
     </div>
-    <div class="company-name"><?= companyName ?></div>
-    <div class="system-tag">Attendance Portal</div>
+
+    <div class="company-name">
+      JACHINSGROUP
+    </div>
+
+    <div class="system-tag">
+      Attendance Portal
+    </div>
+
   </div>
 
   <!-- Alert -->
@@ -33,24 +48,42 @@
 
     <!-- Employee badge -->
     <div class="emp-badge">
-      <div class="emp-avatar">👤</div>
-      <div class="emp-info">
-        <div class="emp-name"><?= employeeName ?></div>
-        <div class="emp-meta"><?= employeeId ?> &nbsp;·&nbsp; <?= department ?></div>
+
+      <div class="emp-avatar">
+        👤
       </div>
-      <div class="emp-status active">Active</div>
+
+      <div class="emp-info">
+
+        <div class="emp-name" id="employee-name">
+          Loading...
+        </div>
+
+        <div class="emp-meta" id="employee-meta">
+          Loading...
+        </div>
+
+      </div>
+
+      <div class="emp-status active">
+        Active
+      </div>
+
     </div>
 
     <!-- Status bar -->
     <div class="status-bar">
-      <div class="status-pill <?= checkedInToday  ? 'done' : 'pending' ?>">
-        <span class="pill-icon"><?= checkedInToday  ? '✅' : '🕐' ?></span>
-        CHECK-IN<br><?= checkedInToday  ? 'Done' : 'Pending' ?>
+
+      <div class="status-pill pending" id="checkin-status">
+        <span class="pill-icon">🕐</span>
+        CHECK-IN<br>Pending
       </div>
-      <div class="status-pill <?= checkedOutToday ? 'done' : 'pending' ?>">
-        <span class="pill-icon"><?= checkedOutToday ? '✅' : '🕕' ?></span>
-        CHECK-OUT<br><?= checkedOutToday ? 'Done' : 'Pending' ?>
+
+      <div class="status-pill pending" id="checkout-status">
+        <span class="pill-icon">🕕</span>
+        CHECK-OUT<br>Pending
       </div>
+
     </div>
 
     <!-- Live clock -->
@@ -61,36 +94,66 @@
 
     <!-- GPS box -->
     <div class="gps-box waiting" id="gps-box">
-      <span class="gps-icon">📡</span>
+
+      <span class="gps-icon">
+        📡
+      </span>
+
       <div class="gps-text">
-        <strong id="gps-title">Acquiring GPS...</strong>
-        <small id="gps-detail">Waiting for location permission</small>
+        <strong id="gps-title">
+          Acquiring GPS...
+        </strong>
+
+        <small id="gps-detail">
+          Waiting for location permission
+        </small>
       </div>
-      <div class="spinner" id="gps-spinner" style="display:block"></div>
+
+      <div
+        class="spinner"
+        id="gps-spinner"
+        style="display:block"
+      ></div>
+
     </div>
 
     <!-- Buttons -->
     <div class="btn-group">
-      <button class="btn btn-checkin"  id="btn-checkin"  onclick="submitAction('checkin')"
-              <?= checkedInToday || checkedOutToday ? 'disabled' : '' ?>>
+
+      <button
+        class="btn btn-checkin"
+        id="btn-checkin"
+        onclick="submitAction('checkin')"
+        disabled
+      >
         <span id="ci-spinner" class="spinner"></span>
         <span id="ci-label">⏱ Check In</span>
       </button>
-      <button class="btn btn-checkout" id="btn-checkout" onclick="submitAction('checkout')"
-              <?= !checkedInToday || checkedOutToday ? 'disabled' : '' ?>>
+
+      <button
+        class="btn btn-checkout"
+        id="btn-checkout"
+        onclick="submitAction('checkout')"
+        disabled
+      >
         <span id="co-spinner" class="spinner"></span>
         <span id="co-label">🏁 Check Out</span>
       </button>
+
     </div>
 
   </div>
 
-  <!-- Security notice -->
-  <div class="sec-note">🔒 GPS verified &nbsp;|&nbsp; IP monitored</div>
+  <!-- Security -->
+  <div class="sec-note">
+    🔒 GPS verified | IP monitored
+  </div>
 
-  <!-- Hidden data -->
-  <input type="hidden" id="token"    value="<?= token ?>">
-  <input type="hidden" id="emp-name" value="<?= employeeName ?>">
+  <!-- Hidden Inputs -->
+  <input type="hidden" id="token">
+
+  <!-- JS -->
+  <script src="app.js"></script>
 
 </body>
 </html>

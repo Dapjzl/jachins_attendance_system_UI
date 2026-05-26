@@ -1,5 +1,7 @@
+alert("SCRIPT STARTED");
+console.log("SCRIPT STARTED");
 // ── CONFIG ──────────────────────────────────────────
-const APP_URL = '<?= appUrl ?>';
+const APP_URL = 'https://script.google.com/macros/s/AKfycbzw7WLhirxNQTbYHiCD24ese2-LjPjRnc3UY4SlF2MT0xN7Uau_SAHw_05GndV8QSA/exec';
 
 let gpsData = null;
 let userIP = null;
@@ -99,122 +101,13 @@ try {
 }
 }
 
-function initGPS() {
-    alert("GPS INIT STARTED");
+window.addEventListener('load', function () {
 
-console.log('[GPS] Starting...');
-
-const spinner = document.getElementById('gps-spinner');
-
-spinner.style.display = 'block';
-
-if (!navigator.geolocation) {
-
-  _gpsError(
-    'GPS Unsupported',
-    'This browser does not support GPS.'
-  );
-
-  return;
-}
-
-navigator.permissions.query({
-  name: 'geolocation'
-})
-.then(function(permission) {
-
-  console.log('Permission:', permission.state);
-
-  if (permission.state === 'denied') {
-
-    _gpsError(
-      'Location Blocked',
-      'Enable location permission in browser settings.'
-    );
-
-    return;
-  }
-
-  setGPS(
-    'waiting',
-    'Getting Location...',
-    'Please wait...'
-  );
-
-  const watchId = navigator.geolocation.watchPosition(
-
-    function(position) {
-
-      console.log('GPS SUCCESS');
-
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
-      const acc = Math.round(position.coords.accuracy);
-
-      gpsData = {
-        latitude: lat,
-        longitude: lng,
-        accuracy: acc,
-        locationName:
-          lat.toFixed(5) + ', ' +
-          lng.toFixed(5)
-      };
-
-      setGPS(
-        'ready',
-        'Location Acquired',
-        gpsData.locationName + ' ±' + acc + 'm'
-      );
-
-      spinner.style.display = 'none';
-
-      updateButtons();
-
-      navigator.geolocation.clearWatch(watchId);
-
-    },
-
-    function(error) {
-
-      console.log('GPS ERROR', error);
-
-      let msg = 'Unable to get location';
-
-      if (error.code === 1)
-        msg = 'Location permission denied';
-
-      if (error.code === 2)
-        msg = 'Location unavailable';
-
-      if (error.code === 3)
-        msg = 'Location timeout';
-
-      _gpsError('GPS Error', msg);
-
-    },
-
-    {
-      enableHighAccuracy: false,
-      timeout: 60000,
-      maximumAge: 30000
-    }
-
-  );
-
-})
-.catch(function(err) {
-
-  console.log(err);
-
-  _gpsError(
-    'GPS Failed',
-    'Could not initialize GPS.'
-  );
-
-});
-
-}
-
+    alert("WINDOW LOADED");
+  
+    initGPS();
+  
+  });
 
 function _gpsError(title, detail) {
   setGPS('error', title, detail);
