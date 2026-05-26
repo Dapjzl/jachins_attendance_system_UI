@@ -61,21 +61,42 @@ function setGPS(cls, title, detail) {
 }
 
 // ── GET LOCATION NAME (fire-and-forget, never blocks) ──
+
 function getLocationName(lat, lng) {
-  var url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' + lat + '&lon=' + lng;
+
+  const url =
+    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`;
+
   fetch(url)
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      var name = (d.address && (d.address.road || d.address.suburb || d.address.city))
-        || d.display_name || null;
-      if (name && gpsData) {
-        gpsData.locationName = name;
-        document.getElementById('gps-detail').textContent =
-          name + ' \u2022 \u00b1' + gpsData.accuracy + 'm';
-      }
+    .then(r => r.json())
+    .then(data => {
+
+      console.log("LOCATION DATA:", data);
+
+      const location =
+        data.address?.road ||
+        data.address?.suburb ||
+        data.address?.city ||
+        data.display_name ||
+        `${lat}, ${lng}`;
+
+      gpsData.locationName = location;
+
+      document.getElementById('gps-detail').textContent =
+        location;
+
     })
-    .catch(function() { /* non-fatal — coordinates already stored */ });
+    .catch(err => {
+
+      console.log(err);
+
+      gpsData.locationName =
+        `${lat}, ${lng}`;
+
+    });
 }
+
+
 
 // ── GPS CORE ────────────────────────────────────────
 var _watchId     = null;
@@ -131,12 +152,19 @@ function initGPS() {
 
       console.log("GPS SUCCESS");
 
-      gpsData = {
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-        accuracy: position.coords.accuracy,
-        locationName: "GPS Acquired"
-      };
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+
+    gpsData = {
+    latitude: lat,
+    longitude: lng,
+    accuracy: position.coords.accuracy,
+    locationName: lat + "," + lng
+    };
+
+    // GET REAL LOCATION NAME
+    getLocationName(lat, lng);
+
 
       console.log(gpsData);
 
