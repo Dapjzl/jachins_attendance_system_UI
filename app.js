@@ -264,7 +264,6 @@ async function submitAction(action) {
     };
 
     
-    
 const response = await fetch(APP_URL, {
   method: 'POST',
   headers: {
@@ -279,8 +278,6 @@ console.log("SERVER RESPONSE:", data);
 
 
 
-
-    const data = await response.json();
 
     if (data.success) {
 
@@ -358,18 +355,22 @@ document.getElementById('btn-checkout').disabled = true;
 
 });
 
+
 function startGPSOnce() {
 
-const gpsBox = document.getElementById('gps-box');
+  const gpsBox = document.getElementById('gps-box');
 
-gpsBox.removeEventListener('click', startGPSOnce);
+  gpsBox.removeEventListener('click', startGPSOnce);
 
-setGPS(
-  'waiting',
-  'Requesting GPS...',
-  'Please allow location access'
-);
-checkLocationPermission();
-document.getElementById('gps-box')
-.addEventListener('click', initGPS);
+  setGPS(
+    'waiting',
+    'Requesting GPS...',
+    'Please allow location access'
+  );
+
+  checkLocationPermission();
+
+  // START GPS IMMEDIATELY
+  initGPS();
 }
+
