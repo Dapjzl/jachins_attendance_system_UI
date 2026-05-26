@@ -101,13 +101,90 @@ try {
 }
 }
 
-window.addEventListener('load', function () {
 
-    alert("WINDOW LOADED");
-  
-    initGPS();
-  
-  });
+function initGPS() {
+
+  console.log("GPS INIT STARTED");
+
+  const spinner =
+    document.getElementById('gps-spinner');
+
+  spinner.style.display = 'block';
+
+  if (!navigator.geolocation) {
+
+    alert("Geolocation not supported");
+
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+
+    function(position) {
+
+      console.log("GPS SUCCESS");
+
+      gpsData = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        locationName: "GPS Acquired"
+      };
+
+      console.log(gpsData);
+
+      document.getElementById(
+        'gps-spinner'
+      ).style.display = 'none';
+
+      setGPS(
+        'ready',
+        'Location Acquired',
+        'GPS ready for attendance'
+      );
+
+      document.getElementById(
+        'btn-checkin'
+      ).disabled = false;
+
+      document.getElementById(
+        'btn-checkout'
+      ).disabled = false;
+
+      alert("GPS READY");
+
+    },
+
+    function(error) {
+
+      console.log(error);
+
+      alert(
+        "GPS ERROR: " +
+        error.code +
+        " / " +
+        error.message
+      );
+
+      setGPS(
+        'error',
+        'GPS Failed',
+        error.message
+      );
+
+    },
+
+    {
+      enableHighAccuracy: true,
+      timeout: 30000,
+      maximumAge: 0
+    }
+
+  );
+
+}
+
+
 
 function _gpsError(title, detail) {
   setGPS('error', title, detail);
