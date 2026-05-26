@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Permissions-Policy" content="geolocation=(self)">
+  <title><?= companyName ?> — Attendance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-wrap">
+      <img 
+          src="https://drive.google.com/uc?export=view&id=1Iz9eUhCm2Ua-EXbq_pQDwSiBwjvFzKxW"
+          alt="Company Logo"
+          referrerpolicy="no-referrer"
+          style="width:48px;height:48px;object-fit:contain;border-radius:8px;">
+    </div>
+    <div class="company-name"><?= companyName ?></div>
+    <div class="system-tag">Attendance Portal</div>
+  </div>
+
+  <!-- Alert -->
+  <div id="alert"></div>
+
+  <!-- Main Card -->
+  <div class="card">
+
+    <!-- Employee badge -->
+    <div class="emp-badge">
+      <div class="emp-avatar">👤</div>
+      <div class="emp-info">
+        <div class="emp-name"><?= employeeName ?></div>
+        <div class="emp-meta"><?= employeeId ?> &nbsp;·&nbsp; <?= department ?></div>
+      </div>
+      <div class="emp-status active">Active</div>
+    </div>
+
+    <!-- Status bar -->
+    <div class="status-bar">
+      <div class="status-pill <?= checkedInToday  ? 'done' : 'pending' ?>">
+        <span class="pill-icon"><?= checkedInToday  ? '✅' : '🕐' ?></span>
+        CHECK-IN<br><?= checkedInToday  ? 'Done' : 'Pending' ?>
+      </div>
+      <div class="status-pill <?= checkedOutToday ? 'done' : 'pending' ?>">
+        <span class="pill-icon"><?= checkedOutToday ? '✅' : '🕕' ?></span>
+        CHECK-OUT<br><?= checkedOutToday ? 'Done' : 'Pending' ?>
+      </div>
+    </div>
+
+    <!-- Live clock -->
+    <div class="datetime-row">
+      <span id="live-date"></span>
+      <span id="live-time"></span>
+    </div>
+
+    <!-- GPS box -->
+    <div class="gps-box waiting" id="gps-box">
+      <span class="gps-icon">📡</span>
+      <div class="gps-text">
+        <strong id="gps-title">Acquiring GPS...</strong>
+        <small id="gps-detail">Waiting for location permission</small>
+      </div>
+      <div class="spinner" id="gps-spinner" style="display:block"></div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="btn-group">
+      <button class="btn btn-checkin"  id="btn-checkin"  onclick="submitAction('checkin')"
+              <?= checkedInToday || checkedOutToday ? 'disabled' : '' ?>>
+        <span id="ci-spinner" class="spinner"></span>
+        <span id="ci-label">⏱ Check In</span>
+      </button>
+      <button class="btn btn-checkout" id="btn-checkout" onclick="submitAction('checkout')"
+              <?= !checkedInToday || checkedOutToday ? 'disabled' : '' ?>>
+        <span id="co-spinner" class="spinner"></span>
+        <span id="co-label">🏁 Check Out</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Security notice -->
+  <div class="sec-note">🔒 GPS verified &nbsp;|&nbsp; IP monitored</div>
+
+  <!-- Hidden data -->
+  <input type="hidden" id="token"    value="<?= token ?>">
+  <input type="hidden" id="emp-name" value="<?= employeeName ?>">
+
+</body>
+</html>
