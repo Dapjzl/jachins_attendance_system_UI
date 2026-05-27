@@ -11,16 +11,12 @@ const employeeToken = params.get('token') || '';
 
 console.log('TOKEN:', employeeToken);
 
-
 async function loadEmployee() {
 
   try {
 
     const response = await fetch(APP_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'text/plain;charset=utf-8'
-      },
       body: JSON.stringify({
         action: 'employee',
         token: employeeToken
@@ -31,34 +27,25 @@ async function loadEmployee() {
 
     console.log('EMPLOYEE:', data);
 
-    if (!data.success) {
+    if (data.success) {
 
-      showAlert(
-        'error',
-        'Employee record not found'
-      );
+      document.querySelector('.emp-name')
+        .textContent = data.employee.name;
 
-      return;
+      document.querySelector('.emp-meta')
+        .textContent =
+          data.employee.employeeId +
+          ' · ' +
+          data.employee.department;
+
     }
-
-    const emp = data.employee;
-
-    document.querySelector('.emp-name')
-      .textContent = emp.name;
-
-    document.querySelector('.emp-meta')
-      .textContent =
-        emp.employeeId + ' · ' + emp.department;
 
   } catch (err) {
 
     console.log(err);
 
-    showAlert(
-      'error',
-      'Failed to load employee'
-    );
   }
+
 }
 
 
@@ -299,6 +286,7 @@ function updateButtons() {
 }
 
 // ── SUBMIT ATTENDANCE ──────────────────────────────
+
 async function submitAction(action) {
 
   if (!gpsData) {
@@ -337,34 +325,40 @@ async function submitAction(action) {
   try {
 
     const payload = {
+
       action: action,
-      token: document.getElementById('token').value,
 
-      latitude: gpsData.latitude,
-      longitude: gpsData.longitude,
-      accuracy: gpsData.accuracy,
-      locationName: gpsData.locationName,
+      token:
+        document.getElementById('token').value,
 
-      ip: userIP || 'unknown',
+      latitude:
+        gpsData.latitude,
 
-      userAgent: navigator.userAgent
+      longitude:
+        gpsData.longitude,
+
+      accuracy:
+        gpsData.accuracy,
+
+      locationName:
+        gpsData.locationName,
+
+      ip:
+        userIP || 'unknown',
+
+      userAgent:
+        navigator.userAgent
+
     };
 
-    
-const response = await fetch(APP_URL, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'text/plain;charset=utf-8'
-  },
-  body: JSON.stringify(payload)
-});
+    const response = await fetch(APP_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
 
-const data = await response.json();
+    const data = await response.json();
 
-console.log("SERVER RESPONSE:", data);
-
-
-
+    console.log('SERVER RESPONSE:', data);
 
     if (data.success) {
 
@@ -385,9 +379,12 @@ console.log("SERVER RESPONSE:", data);
         'error',
         '⚠️ ' + data.message
       );
+
     }
 
   } catch (err) {
+
+    console.log(err);
 
     btn.disabled = false;
 
@@ -395,12 +392,15 @@ console.log("SERVER RESPONSE:", data);
       'error',
       '🔌 Network error occurred.'
     );
+
   }
 
   spinner.style.display = 'none';
 
   label.style.opacity = '1';
+
 }
+
 
 // ── ALERT ──────────────────────────────────────────
 function showAlert(type, msg) {
