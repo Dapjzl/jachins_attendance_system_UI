@@ -11,9 +11,15 @@ const employeeToken = params.get('token') || '';
 
 console.log('TOKEN:', employeeToken);
 
+
 async function loadEmployee() {
 
   try {
+
+    const employeeToken =
+      document.getElementById('token').value;
+
+    console.log('TOKEN:', employeeToken);
 
     const response = await fetch(APP_URL, {
       method: 'POST',
@@ -30,13 +36,21 @@ async function loadEmployee() {
     if (data.success) {
 
       document.querySelector('.emp-name')
-        .textContent = data.employee.name;
+        .textContent =
+        data.employee.name;
 
       document.querySelector('.emp-meta')
         .textContent =
-          data.employee.employeeId +
-          ' · ' +
-          data.employee.department;
+        data.employee.employeeId +
+        ' · ' +
+        data.employee.department;
+
+    } else {
+
+      showAlert(
+        'error',
+        data.message
+      );
 
     }
 
@@ -44,10 +58,14 @@ async function loadEmployee() {
 
     console.log(err);
 
+    showAlert(
+      'error',
+      'Failed to load employee details'
+    );
+
   }
 
 }
-
 
 
 // ── CLOCK ───────────────────────────────────────────
