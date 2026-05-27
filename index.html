@@ -43,29 +43,21 @@
   <div class="card">
 
     <!-- Employee badge -->
-    <div class="emp-badge">
+<div class="emp-badge">
 
-      <div class="emp-avatar">
-        👤
-      </div>
+  <div class="emp-avatar">👤</div>
 
-      <div class="emp-info">
+  <div class="emp-info">
+    <div id="emp-name" class="emp-name">Loading...</div>
 
-      <div class="emp-name"><?= employee.name ?></div>
-
-      <div class="emp-meta">
-        <?= employee.employeeId ?>
-        &nbsp;·&nbsp;
-        <?= employee.department ?>
-      </div>
-
-      </div>
-
-      <div class="emp-status active">
-        Active
-      </div>
-
+    <div id="emp-meta" class="emp-meta">
+      Loading department...
     </div>
+  </div>
+
+  <div class="emp-status active">Active</div>
+
+</div>
 
     <!-- Status bar -->
     <div class="status-bar">

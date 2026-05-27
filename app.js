@@ -384,6 +384,60 @@ function showAlert(type, msg) {
   }, 7000);
 }
 
+async function loadEmployee() {
+
+  const employeeToken =
+    document.getElementById('token').value;
+
+  console.log("TOKEN:", employeeToken);
+
+  try {
+
+    const response = await fetch(
+      APP_URL +
+      '?action=employee&token=' +
+      encodeURIComponent(employeeToken)
+    );
+
+    const data = await response.json();
+
+    console.log("EMPLOYEE:", data);
+
+    if (data.success) {
+
+      document.getElementById('emp-name')
+        .textContent = data.employee.name;
+
+      document.getElementById('emp-meta')
+        .textContent =
+          data.employee.department +
+          ' • ' +
+          data.employee.employeeId;
+
+    } else {
+
+      document.getElementById('emp-name')
+        .textContent = 'Employee Not Found';
+
+      document.getElementById('emp-meta')
+        .textContent = data.message;
+    }
+
+  } catch (err) {
+
+    console.log(err);
+
+    document.getElementById('emp-name')
+      .textContent = 'Connection Error';
+
+    document.getElementById('emp-meta')
+      .textContent =
+        'Could not load employee data';
+  }
+}
+
+loadEmployee();
+
 // ── START ──────────────────────────────────────────
 
 window.addEventListener('load', () => {
