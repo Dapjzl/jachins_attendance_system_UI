@@ -11,7 +11,6 @@ const employeeToken = params.get('token') || '';
 
 console.log('TOKEN:', employeeToken);
 
-
 async function loadEmployee() {
 
   try {
@@ -21,13 +20,11 @@ async function loadEmployee() {
 
     console.log('TOKEN:', employeeToken);
 
-    const response = await fetch(APP_URL, {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'employee',
-        token: employeeToken
-      })
-    });
+    const response = await fetch(
+      APP_URL +
+      '?action=employee&token=' +
+      encodeURIComponent(employeeToken)
+    );
 
     const data = await response.json();
 
