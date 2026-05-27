@@ -12,6 +12,56 @@ const employeeToken = params.get('token') || '';
 console.log('TOKEN:', employeeToken);
 
 
+async function loadEmployee() {
+
+  try {
+
+    const response = await fetch(APP_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain;charset=utf-8'
+      },
+      body: JSON.stringify({
+        action: 'employee',
+        token: employeeToken
+      })
+    });
+
+    const data = await response.json();
+
+    console.log('EMPLOYEE:', data);
+
+    if (!data.success) {
+
+      showAlert(
+        'error',
+        'Employee record not found'
+      );
+
+      return;
+    }
+
+    const emp = data.employee;
+
+    document.querySelector('.emp-name')
+      .textContent = emp.name;
+
+    document.querySelector('.emp-meta')
+      .textContent =
+        emp.employeeId + ' · ' + emp.department;
+
+  } catch (err) {
+
+    console.log(err);
+
+    showAlert(
+      'error',
+      'Failed to load employee'
+    );
+  }
+}
+
+
 
 // ── CLOCK ───────────────────────────────────────────
 function updateClock() {
