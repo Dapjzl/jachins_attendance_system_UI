@@ -386,27 +386,19 @@ function showAlert(type, msg) {
 
 async function loadEmployee() {
 
-  const response = await fetch(url);
-
-  console.log("STATUS:", response.status);
-
-  const text = await response.text();
-  console.log("RAW:", text);
-
-  const data = JSON.parse(text);
-
   const employeeToken =
     document.getElementById('token').value;
 
   console.log("TOKEN:", employeeToken);
 
+  const url =
+    APP_URL +
+    '?action=employee&token=' +
+    encodeURIComponent(employeeToken);
+
   try {
 
-    const response = await fetch(
-      APP_URL +
-      '?action=employee&token=' +
-      encodeURIComponent(employeeToken)
-    );
+    const response = await fetch(url);
 
     const data = await response.json();
 
