@@ -427,6 +427,8 @@ window.addEventListener('load', () => {
 
 document.getElementById('token').value = employeeToken;
 
+loadEmployee();
+
 setGPS(
   'waiting',
   'Tap to Enable Location',
