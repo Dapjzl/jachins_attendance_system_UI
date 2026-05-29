@@ -401,10 +401,6 @@ async function loadEmployee() {
 
       method: 'POST',
 
-      headers: {
-        'Content-Type': 'application/json'
-      },
-
       body: JSON.stringify({
         action: 'employee',
         token: employeeToken
