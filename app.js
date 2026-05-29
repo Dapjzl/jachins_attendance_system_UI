@@ -1,5 +1,5 @@
 // ── CONFIG ──────────────────────────────────────────
-const APP_URL = 'https://script.google.com/macros/s/AKfycbzw7WLhirxNQTbYHiCD24ese2-LjPjRnc3UY4SlF2MT0xN7Uau_SAHw_05GndV8QSA/exec';
+// const APP_URL = 'https://script.google.com/macros/s/AKfycbzw7WLhirxNQTbYHiCD24ese2-LjPjRnc3UY4SlF2MT0xN7Uau_SAHw_05GndV8QSA/exec';
 
 let gpsData = null;
 let userIP = null;
@@ -314,7 +314,7 @@ async function submitAction(action) {
 
     };
 
-    const response = await fetch(APP_URL, {
+    const response = await fetch('/api/employee', {
       method: 'POST',
       body: JSON.stringify(payload)
     });
@@ -397,22 +397,12 @@ async function loadEmployee() {
 
   try {
 
-    const response = await fetch(APP_URL, {
+    const response = await fetch(
+      '/api/employee?token=' +
+      encodeURIComponent(employeeToken)
+    );
 
-      method: 'POST',
-
-      body: JSON.stringify({
-        action: 'employee',
-        token: employeeToken
-      })
-
-    });
-
-    const text = await response.text();
-
-    console.log("RAW RESPONSE:", text);
-
-    const data = JSON.parse(text);
+    const data = await response.json();
 
     console.log("EMPLOYEE:", data);
 
@@ -448,7 +438,6 @@ async function loadEmployee() {
         'Could not load employee data';
   }
 }
-
 
 // ── START ──────────────────────────────────────────
 
