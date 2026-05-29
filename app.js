@@ -291,8 +291,7 @@ async function submitAction(action) {
 
       action: action,
 
-      token:
-        document.getElementById('token').value,
+      token: employeeToken,
 
       latitude:
         gpsData.latitude,
@@ -390,10 +389,21 @@ function showAlert(type, msg) {
 
 async function loadEmployee() {
 
-  const employeeToken =
-    document.getElementById('token').value;
-
   console.log("TOKEN:", employeeToken);
+
+  if (!employeeToken) {
+
+    console.log("NO TOKEN FOUND");
+
+    document.getElementById('emp-name')
+      .textContent = 'Missing Token';
+
+    document.getElementById('emp-meta')
+      .textContent = 'No attendance token provided';
+
+    return;
+
+  }
 
   try {
 
@@ -402,7 +412,11 @@ async function loadEmployee() {
       encodeURIComponent(employeeToken)
     );
 
-    const data = await response.json();
+    const text = await response.text();
+
+    console.log("RAW API RESPONSE:", text);
+
+    const data = JSON.parse(text);
 
     console.log("EMPLOYEE:", data);
 
@@ -424,6 +438,7 @@ async function loadEmployee() {
 
       document.getElementById('emp-meta')
         .textContent = data.message;
+
     }
 
   } catch (err) {
@@ -434,11 +449,11 @@ async function loadEmployee() {
       .textContent = 'Connection Error';
 
     document.getElementById('emp-meta')
-      .textContent =
-        'Could not load employee data';
-  }
-}
+      .textContent = err.toString();
 
+  }
+
+}
 // ── START ──────────────────────────────────────────
 
 window.addEventListener('load', () => {
