@@ -395,15 +395,28 @@ async function loadEmployee() {
 
   console.log("TOKEN:", employeeToken);
 
-  const url =
-  '/api/employee?token=' +
-  encodeURIComponent(employeeToken);
-
   try {
 
-    const response = await fetch(url);
+    const response = await fetch(APP_URL, {
 
-    const data = await response.json();
+      method: 'POST',
+
+      headers: {
+        'Content-Type': 'application/json'
+      },
+
+      body: JSON.stringify({
+        action: 'employee',
+        token: employeeToken
+      })
+
+    });
+
+    const text = await response.text();
+
+    console.log("RAW RESPONSE:", text);
+
+    const data = JSON.parse(text);
 
     console.log("EMPLOYEE:", data);
 
@@ -438,8 +451,6 @@ async function loadEmployee() {
       .textContent =
         'Could not load employee data';
   }
-
-
 }
 
 
