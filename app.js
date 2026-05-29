@@ -1,6 +1,6 @@
 // ── CONFIG ──────────────────────────────────────────
 // const APP_URL = 'https://script.google.com/macros/s/AKfycbzw7WLhirxNQTbYHiCD24ese2-LjPjRnc3UY4SlF2MT0xN7Uau_SAHw_05GndV8QSA/exec';
-
+let isSubmitting = false;
 let gpsData = null;
 let userIP = null;
 
@@ -252,13 +252,17 @@ function updateButtons() {
 
 async function submitAction(action) {
 
+  if (isSubmitting) return;
+
+  isSubmitting = true;
+
   if (!gpsData) {
 
     showAlert(
       'error',
       '📍 GPS location required before attendance.'
     );
-
+    isSubmitting = false;
     return;
   }
 
@@ -287,32 +291,6 @@ async function submitAction(action) {
 
   try {
 
-    const payload = {
-
-      action: action,
-
-      token: employeeToken,
-
-      latitude:
-        gpsData.latitude,
-
-      longitude:
-        gpsData.longitude,
-
-      accuracy:
-        gpsData.accuracy,
-
-      locationName:
-        gpsData.locationName,
-
-      ip:
-        userIP || 'unknown',
-
-      userAgent:
-        navigator.userAgent
-
-    };
-
     const response = await fetch('/api/attendance', {
       method: 'POST',
       headers: {
@@ -337,6 +315,22 @@ async function submitAction(action) {
     const data = JSON.parse(text);
 
     console.log('SERVER RESPONSE:', data);
+    if (!data.success) {
+
+      btn.disabled = false;
+    
+      spinner.style.display = 'none';
+    
+      label.style.opacity = '1';
+    
+      showAlert(
+        'error',
+        '⚠️ ' + data.message
+      );
+      isSubmitting = false;
+      return;
+    }
+
     if (data.success) {
 
       showAlert(
@@ -344,20 +338,24 @@ async function submitAction(action) {
         '✅ ' + data.message
       );
     
-      // CHECK-IN SUCCESS
+      // ── CHECK-IN SUCCESS ─────────────────
       if (action === 'checkin') {
     
-        // Disable check-in button
-        const ciBtn = document.getElementById('btn-checkin');
+        const ciBtn =
+          document.getElementById('btn-checkin');
+    
+        const coBtn =
+          document.getElementById('btn-checkout');
+    
+        // LOCK CHECK-IN
         ciBtn.disabled = true;
         ciBtn.dataset.locked = 'true';
     
-        // Enable check-out button
-        const coBtn = document.getElementById('btn-checkout');
+        // ENABLE CHECKOUT
         coBtn.disabled = false;
-        delete coBtn.dataset.locked;
+        coBtn.dataset.locked = '';
     
-        // Update status pills
+        // STATUS UI
         const checkinPill =
           document.getElementById('checkin-pill');
     
@@ -382,7 +380,7 @@ async function submitAction(action) {
     
       }
     
-      // CHECK-OUT SUCCESS
+      // ── CHECK-OUT SUCCESS ────────────────
       if (action === 'checkout') {
     
         const coBtn =
@@ -395,6 +393,7 @@ async function submitAction(action) {
           document.getElementById('checkout-pill');
     
         if (checkoutPill) {
+    
           checkoutPill.className =
             'status-pill done';
     
@@ -404,13 +403,20 @@ async function submitAction(action) {
     
       }
     
+    } else {
+    
+      // REQUEST FAILED
+      btn.disabled = false;
+    
+      showAlert(
+        'error',
+        '⚠️ ' + data.message
+      );
     }
 
   } catch (err) {
 
     console.log(err);
-
-    btn.disabled = false;
 
     showAlert(
       'error',
@@ -423,6 +429,7 @@ async function submitAction(action) {
 
   label.style.opacity = '1';
 
+  isSubmitting = false;
 }
 
 
