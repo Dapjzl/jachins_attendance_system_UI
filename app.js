@@ -318,7 +318,16 @@ async function submitAction(action) {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        action: action,
+        token: employeeToken,
+        latitude: gpsData.latitude,
+        longitude: gpsData.longitude,
+        accuracy: gpsData.accuracy,
+        locationName: gpsData.locationName,
+        ip: userIP || 'unknown',
+        userAgent: navigator.userAgent
+      })
     });
 
     const text = await response.text();
@@ -328,27 +337,73 @@ async function submitAction(action) {
     const data = JSON.parse(text);
 
     console.log('SERVER RESPONSE:', data);
-
     if (data.success) {
 
       showAlert(
         'success',
         '✅ ' + data.message
       );
-
-      setTimeout(() => {
-        location.reload();
-      }, 2500);
-
-    } else {
-
-      btn.disabled = false;
-
-      showAlert(
-        'error',
-        '⚠️ ' + data.message
-      );
-
+    
+      // CHECK-IN SUCCESS
+      if (action === 'checkin') {
+    
+        // Disable check-in button
+        const ciBtn = document.getElementById('btn-checkin');
+        ciBtn.disabled = true;
+        ciBtn.dataset.locked = 'true';
+    
+        // Enable check-out button
+        const coBtn = document.getElementById('btn-checkout');
+        coBtn.disabled = false;
+        delete coBtn.dataset.locked;
+    
+        // Update status pills
+        const checkinPill =
+          document.getElementById('checkin-pill');
+    
+        const checkoutPill =
+          document.getElementById('checkout-pill');
+    
+        if (checkinPill) {
+          checkinPill.className =
+            'status-pill done';
+    
+          checkinPill.innerHTML =
+            '<span class="pill-icon">✅</span>Checked In';
+        }
+    
+        if (checkoutPill) {
+          checkoutPill.className =
+            'status-pill pending';
+    
+          checkoutPill.innerHTML =
+            '<span class="pill-icon">⏳</span>Awaiting Check-Out';
+        }
+    
+      }
+    
+      // CHECK-OUT SUCCESS
+      if (action === 'checkout') {
+    
+        const coBtn =
+          document.getElementById('btn-checkout');
+    
+        coBtn.disabled = true;
+        coBtn.dataset.locked = 'true';
+    
+        const checkoutPill =
+          document.getElementById('checkout-pill');
+    
+        if (checkoutPill) {
+          checkoutPill.className =
+            'status-pill done';
+    
+          checkoutPill.innerHTML =
+            '<span class="pill-icon">✅</span>Checked Out';
+        }
+    
+      }
+    
     }
 
   } catch (err) {
