@@ -315,6 +315,9 @@ async function submitAction(action) {
 
     const response = await fetch('/api/attendance', {
       method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(payload)
     });
 
