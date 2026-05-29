@@ -392,9 +392,8 @@ async function loadEmployee() {
   console.log("TOKEN:", employeeToken);
 
   const url =
-    APP_URL +
-    '?action=employee&token=' +
-    encodeURIComponent(employeeToken);
+  '/api/employee?token=' +
+  encodeURIComponent(employeeToken);
 
   try {
 
