@@ -319,7 +319,11 @@ async function submitAction(action) {
       body: JSON.stringify(payload)
     });
 
-    const data = await response.json();
+    const text = await response.text();
+
+    console.log("RAW RESPONSE:", text);
+
+    const data = JSON.parse(text);
 
     console.log('SERVER RESPONSE:', data);
 
@@ -434,9 +438,10 @@ async function loadEmployee() {
       .textContent =
         'Could not load employee data';
   }
+
+
 }
 
-loadEmployee();
 
 // ── START ──────────────────────────────────────────
 
@@ -444,6 +449,7 @@ window.addEventListener('load', () => {
 
 document.getElementById('token').value = employeeToken;
 
+loadEmployee();
 
 setGPS(
   'waiting',
@@ -459,6 +465,7 @@ gpsBox.addEventListener('click', startGPSOnce);
 
 document.getElementById('btn-checkin').disabled = true;
 document.getElementById('btn-checkout').disabled = true;
+
 
 });
 
