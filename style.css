@@ -66,7 +66,7 @@ body {
 .system-tag {
   font-size: 12px;
   font-weight: 500;
-  color: var(--muted);
+  color: #0000;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   margin-top: 6px;
@@ -144,9 +144,9 @@ body {
 }
 
 .emp-status.active {
-  background: var(--primary);
-  color: var(--white);
-  border: 1px solid var(--primary);
+  background: #22c55e;
+  color: #ffffff;
+  border: 1px solid #22c55e;
 }
 
 .emp-status.inactive {

@@ -313,7 +313,7 @@ async function submitAction(action) {
 
     };
 
-    const response = await fetch('/api/employee', {
+    const response = await fetch('/api/attendance', {
       method: 'POST',
       body: JSON.stringify(payload)
     });
