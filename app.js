@@ -211,7 +211,7 @@ function initGPS() {
 
     {
       enableHighAccuracy: true,
-      timeout: 30000,
+      timeout: 45000,
       maximumAge: 0
     }
 
