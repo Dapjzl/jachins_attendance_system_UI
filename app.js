@@ -282,6 +282,7 @@ async function loadEmployee() {
     if (data.success) {
       document.getElementById('emp-name').textContent = data.employee.name;
       document.getElementById('emp-meta').textContent =
+      console.log('EMPLOYEE DATA:', data.employee);
         `${data.employee.department} • ${data.employee.employeeId}`;
     } else {
       document.getElementById('emp-name').textContent = 'Employee Not Found';
