@@ -1,21 +1,54 @@
 // ═══════════════════════════════════════════════════════════════
-//  CONFIG
+//  CONSTANTS
 // ═══════════════════════════════════════════════════════════════
 
-const GPS_ACCURACY_EXCELLENT  = 20;
-const GPS_ACCURACY_GOOD       = 50;
-const GPS_ACCURACY_ACCEPTABLE = 100;   
+const GPS_THRESHOLD = 100;   
 
 // ═══════════════════════════════════════════════════════════════
-//  STATE
+//  SINGLE SOURCE OF TRUTH
+//  Everything reads from here; nothing computes state elsewhere.
 // ═══════════════════════════════════════════════════════════════
 
-let isSubmitting = false;
-let gpsData      = null;
-let userIP       = null;
+const state = {
+  // GPS
+  gpsReady:    false,
+  gpsAccuracy: Infinity,
+  gpsData:     null,        
+  statusLoaded: false,
+  checkedIn:    false,
+  checkedOut:   false,
+  checkInTime:  null,
+  checkOutTime: null,
+  hoursWorked:  null,
 
-const params        = new URLSearchParams(window.location.search);
-const employeeToken = params.get('token') || '';
+  isSubmitting: false,
+};
+
+// ═══════════════════════════════════════════════════════════════
+//  SINGLE SYNC FUNCTION
+//  Called after EVERY state mutation. This is the only place
+//  that reads state and writes to the DOM buttons.
+// ═══════════════════════════════════════════════════════════════
+
+function syncButtonState() {
+  const ciBtn = document.getElementById('btn-checkin');
+  const coBtn = document.getElementById('btn-checkout');
+  if (!ciBtn || !coBtn) return;
+
+  const gpsOk = state.gpsReady && state.gpsAccuracy <= GPS_THRESHOLD;
+
+  // Check In: needs GPS + not yet checked in
+  ciBtn.disabled = !(gpsOk && state.statusLoaded && !state.checkedIn);
+
+  // Check Out: needs GPS + checked in + not yet checked out
+  coBtn.disabled = !(gpsOk && state.statusLoaded && state.checkedIn && !state.checkedOut);
+
+  console.log('[sync] gpsOk:', gpsOk,
+    '| checkedIn:', state.checkedIn,
+    '| checkedOut:', state.checkedOut,
+    '| ciDisabled:', ciBtn.disabled,
+    '| coDisabled:', coBtn.disabled);
+}
 
 // ═══════════════════════════════════════════════════════════════
 //  CLOCK
@@ -32,28 +65,39 @@ setInterval(updateClock, 1000);
 updateClock();
 
 // ═══════════════════════════════════════════════════════════════
-//  IP FETCH
+//  IP
 // ═══════════════════════════════════════════════════════════════
+
+let userIP = null;
 
 async function fetchIP() {
   try {
     const r = await fetch('https://api.ipify.org?format=json');
-    const d = await r.json();
-    userIP = d.ip || 'unknown';
+    userIP = (await r.json()).ip || 'unknown';
   } catch {
     userIP = 'unknown';
   }
 }
-fetchIP();
 
 // ═══════════════════════════════════════════════════════════════
-//  GPS UI HELPERS
+//  TOKEN
 // ═══════════════════════════════════════════════════════════════
 
-/**
- * Sets the GPS status box appearance.
- * @param {'waiting'|'acquiring'|'excellent'|'good'|'acceptable'|'poor'|'error'} cls
- */
+const employeeToken = new URLSearchParams(window.location.search).get('token') || '';
+
+// ═══════════════════════════════════════════════════════════════
+//  GPS
+// ═══════════════════════════════════════════════════════════════
+
+let _watchId = null;
+
+function gpsAccuracyMeta(accuracy) {
+  if (accuracy <=  20) return { cls: 'excellent',  label: 'Excellent',  emoji: '🟢' };
+  if (accuracy <=  50) return { cls: 'good',       label: 'Good',       emoji: '🟡' };
+  if (accuracy <= 100) return { cls: 'acceptable', label: 'Acceptable', emoji: '🟠' };
+  return                      { cls: 'poor',       label: 'Poor',       emoji: '🔴' };
+}
+
 function setGPS(cls, title, detail) {
   const box = document.getElementById('gps-box');
   if (!box) return;
@@ -63,57 +107,13 @@ function setGPS(cls, title, detail) {
   document.getElementById('gps-detail').textContent = detail;
 }
 
-/**
- * Returns display metadata for a given accuracy in metres.
- */
-function getAccuracyMeta(accuracy) {
-  if (accuracy <= GPS_ACCURACY_EXCELLENT)  return { cls: 'excellent',   label: 'Excellent',   emoji: '🟢' };
-  if (accuracy <= GPS_ACCURACY_GOOD)       return { cls: 'good',        label: 'Good',        emoji: '🟡' };
-  if (accuracy <= GPS_ACCURACY_ACCEPTABLE) return { cls: 'acceptable',  label: 'Acceptable',  emoji: '🟠' };
-  return                                          { cls: 'poor',         label: 'Poor',        emoji: '🔴' };
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  REVERSE GEOCODE (fire-and-forget)
-// ═══════════════════════════════════════════════════════════════
-
-function getLocationName(lat, lng) {
-  fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
-    .then(r => r.json())
-    .then(data => {
-      const location =
-        data.address?.road    ||
-        data.address?.suburb  ||
-        data.address?.city    ||
-        data.display_name     ||
-        `${lat}, ${lng}`;
-      gpsData.locationName = location;
-      const meta = getAccuracyMeta(gpsData.accuracy);
-      if (meta.cls !== 'poor') {
-        document.getElementById('gps-detail').textContent =
-          `${meta.emoji} ${meta.label} · ±${Math.round(gpsData.accuracy)}m · ${location}`;
-      }
-    })
-    .catch(() => {
-      gpsData.locationName = `${lat}, ${lng}`;
-    });
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  GPS ACQUISITION
-// ═══════════════════════════════════════════════════════════════
-
-let _watchId = null;
-
 function startGPSOnce() {
-  const gpsBox = document.getElementById('gps-box');
-  gpsBox.removeEventListener('click', startGPSOnce);
-
-  setGPS('acquiring', 'Acquiring GPS…', 'Please wait — this may take a moment outdoors');
+  document.getElementById('gps-box').removeEventListener('click', startGPSOnce);
+  setGPS('acquiring', 'Acquiring GPS…', 'Please wait — works best outdoors');
   document.getElementById('gps-spinner').style.display = 'block';
 
   if (!navigator.geolocation) {
-    setGPS('error', 'GPS Unavailable', 'Your device does not support geolocation');
+    setGPS('error', 'GPS unavailable', 'Your device does not support geolocation');
     document.getElementById('gps-spinner').style.display = 'none';
     return;
   }
@@ -126,143 +126,99 @@ function startGPSOnce() {
 }
 
 function _onGPSSuccess(position) {
-  const lat      = position.coords.latitude;
-  const lng      = position.coords.longitude;
-  const accuracy = position.coords.accuracy;
-  const meta     = getAccuracyMeta(accuracy);
-
-  gpsData = {
-    latitude:     lat,
-    longitude:    lng,
-    accuracy:     accuracy,
-    locationName: `${lat}, ${lng}`,   // updated async by getLocationName
-  };
+  const { latitude, longitude, accuracy } = position.coords;
+  const meta = gpsAccuracyMeta(accuracy);
 
   document.getElementById('gps-spinner').style.display = 'none';
 
-  if (accuracy > GPS_ACCURACY_ACCEPTABLE) {
-    setGPS(
-      'poor',
-      `GPS Poor — ±${Math.round(accuracy)}m`,
-      '🔴 Too inaccurate. Move outdoors and away from buildings.'
-    );
-    _lockButtons();
-    return;
+  state.gpsAccuracy    = accuracy;
+  state.gpsReady       = accuracy <= GPS_THRESHOLD;
+  state.gpsData        = { latitude, longitude, accuracy, locationName: `${latitude}, ${longitude}` };
+
+  if (accuracy > GPS_THRESHOLD) {
+    setGPS('poor', `GPS poor — ±${Math.round(accuracy)}m`,
+      '🔴 Move outdoors, away from buildings');
+  } else {
+    if (_watchId !== null) {
+      navigator.geolocation.clearWatch(_watchId);
+      _watchId = null;
+    }
+    setGPS(meta.cls, `Location ready — ±${Math.round(accuracy)}m`,
+      `${meta.emoji} ${meta.label} · Fetching address…`);
+    _fetchLocationName(latitude, longitude);
   }
 
-  if (_watchId !== null) {
-    navigator.geolocation.clearWatch(_watchId);
-    _watchId = null;
-  }
-
-  setGPS(
-    meta.cls,
-    `Location Ready — ±${Math.round(accuracy)}m`,
-    `${meta.emoji} ${meta.label} · Fetching address…`
-  );
-
-  getLocationName(lat, lng);
-  _unlockButtons();
+  syncButtonState();   
 }
 
 function _onGPSError(error) {
   document.getElementById('gps-spinner').style.display = 'none';
-  setGPS('error', 'GPS Error', error.message);
-  _lockButtons();
+  state.gpsReady = false;
+  setGPS('error', 'GPS error', error.message);
+  syncButtonState();
+}
+
+function _fetchLocationName(lat, lng) {
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
+    .then(r => r.json())
+    .then(d => {
+      const name = d.address?.road || d.address?.suburb || d.address?.city || d.display_name || `${lat}, ${lng}`;
+      if (state.gpsData) state.gpsData.locationName = name;
+      const meta = gpsAccuracyMeta(state.gpsAccuracy);
+      setGPS(meta.cls, `Location ready — ±${Math.round(state.gpsAccuracy)}m`,
+        `${meta.emoji} ${meta.label} · ${name}`);
+    })
+    .catch(() => {});
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  BUTTON STATE HELPERS
-// ═══════════════════════════════════════════════════════════════
-
-
-function _lockButtons() {
-  const ci = document.getElementById('btn-checkin');
-  const co = document.getElementById('btn-checkout');
-  if (ci && !ci.dataset.stateLocked) ci.disabled = true;
-  if (co && !co.dataset.stateLocked) co.disabled = true;
-}
-
-function _unlockButtons() {
-
-  const ci = document.getElementById('btn-checkin');
-  const co = document.getElementById('btn-checkout');
-
-  if (ci && ci.dataset.stateAllowed === 'true' && !ci.dataset.stateLocked) ci.disabled = false;
-  if (co && co.dataset.stateAllowed === 'true' && !co.dataset.stateLocked) co.disabled = false;
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  ATTENDANCE STATE — load on page start
+//  ATTENDANCE STATUS — called on page load
 // ═══════════════════════════════════════════════════════════════
 
 async function loadAttendanceState() {
   if (!employeeToken) return;
 
-  const ciBtn       = document.getElementById('btn-checkin');
-  const coBtn       = document.getElementById('btn-checkout');
-  const checkinPill = document.getElementById('checkin-pill');
-  const checkoutPill = document.getElementById('checkout-pill');
-
   try {
-    const response = await fetch(`/api/status?token=${encodeURIComponent(employeeToken)}`);
-    const data     = await response.json();
+    const res  = await fetch(`/api/status?token=${encodeURIComponent(employeeToken)}`);
+    const data = await res.json();
 
     if (!data.success) return;
 
-    const { checkedIn, checkedOut, checkInTime, checkOutTime, hoursWorked } = data;
+    state.checkedIn    = !!data.checkedIn;
+    state.checkedOut   = !!data.checkedOut;
+    state.checkInTime  = data.checkInTime  || null;
+    state.checkOutTime = data.checkOutTime || null;
+    state.hoursWorked  = data.hoursWorked  || null;
+    state.statusLoaded = true;
 
-    if (!checkedIn) {
-      // ── State A: fresh day ─────────────────────────────────
-      ciBtn.dataset.stateAllowed  = 'true';
-      coBtn.dataset.stateAllowed  = 'false';
-      coBtn.dataset.stateLocked   = 'true';
-      coBtn.disabled              = true;
-
-      if (checkinPill)  checkinPill.className  = 'status-pill pending';
-      if (checkoutPill) checkoutPill.className = 'status-pill pending';
-
-    } else if (checkedIn && !checkedOut) {
-      // ── State B: checked in, awaiting check-out ────────────
-      ciBtn.dataset.stateAllowed  = 'false';
-      ciBtn.dataset.stateLocked   = 'true';
-      ciBtn.disabled              = true;
-
-      coBtn.dataset.stateAllowed  = 'true';
-
-      if (checkinPill) {
-        checkinPill.className = 'status-pill done';
-        checkinPill.innerHTML = `<span class="pill-icon">✅</span>Checked In at ${checkInTime}`;
-      }
-      if (checkoutPill) {
-        checkoutPill.className = 'status-pill pending';
-        checkoutPill.innerHTML = `<span class="pill-icon">⏳</span>Awaiting Check-Out`;
-      }
-
-    } else {
-      // ── State C: day complete ──────────────────────────────
-      ciBtn.dataset.stateAllowed  = 'false';
-      ciBtn.dataset.stateLocked   = 'true';
-      ciBtn.disabled              = true;
-
-      coBtn.dataset.stateAllowed  = 'false';
-      coBtn.dataset.stateLocked   = 'true';
-      coBtn.disabled              = true;
-
-      if (checkinPill) {
-        checkinPill.className = 'status-pill done';
-        checkinPill.innerHTML = `<span class="pill-icon">✅</span>Checked In at ${checkInTime}`;
-      }
-      if (checkoutPill) {
-        checkoutPill.className = 'status-pill done';
-        checkoutPill.innerHTML = `<span class="pill-icon">✅</span>Checked Out at ${checkOutTime}${hoursWorked ? ' · ' + hoursWorked + 'h' : ''}`;
-      }
-
-      showAlert('success', `✅ Attendance completed for today. You worked ${hoursWorked || '—'} hours.`);
-    }
+    _applyStatusUI();
+    syncButtonState();   // ← re-evaluate buttons after status loads
 
   } catch (err) {
-    console.error('[Status] Failed to load attendance state:', err);
+    console.error('[Status] Failed:', err);
+  }
+}
+
+function _applyStatusUI() {
+  const checkinPill  = document.getElementById('checkin-pill');
+  const checkoutPill = document.getElementById('checkout-pill');
+
+  if (state.checkedIn && checkinPill) {
+    checkinPill.className = 'status-pill done';
+    checkinPill.innerHTML = `<span class="pill-icon">✅</span>Checked in at ${state.checkInTime || '—'}`;
+  }
+
+  if (state.checkedOut && checkoutPill) {
+    checkoutPill.className = 'status-pill done';
+    checkoutPill.innerHTML = `<span class="pill-icon">✅</span>Checked out at ${state.checkOutTime || '—'}` +
+      (state.hoursWorked ? ` · ${state.hoursWorked}h` : '');
+  } else if (state.checkedIn && checkoutPill) {
+    checkoutPill.className = 'status-pill pending';
+    checkoutPill.innerHTML = `<span class="pill-icon">⏳</span>Awaiting check-out`;
+  }
+
+  if (state.checkedIn && state.checkedOut) {
+    showAlert('success', `✅ Attendance complete for today. Hours worked: ${state.hoursWorked || '—'}`);
   }
 }
 
@@ -272,23 +228,23 @@ async function loadAttendanceState() {
 
 async function loadEmployee() {
   if (!employeeToken) {
-    document.getElementById('emp-name').textContent = 'Missing Token';
-    document.getElementById('emp-meta').textContent = 'No attendance token provided';
+    document.getElementById('emp-name').textContent = 'Missing token';
+    document.getElementById('emp-meta').textContent = 'No attendance token in URL';
     return;
   }
   try {
-    const response = await fetch(`/api/employee?token=${encodeURIComponent(employeeToken)}`);
-    const data     = await response.json();
+    const res  = await fetch(`/api/employee?token=${encodeURIComponent(employeeToken)}`);
+    const data = await res.json();
     if (data.success) {
       document.getElementById('emp-name').textContent = data.employee.name;
       document.getElementById('emp-meta').textContent =
-        `${data.employee.department} • ${data.employee.employeeId}`;
+        `${data.employee.department} · ${data.employee.employeeId}`;
     } else {
-      document.getElementById('emp-name').textContent = 'Employee Not Found';
-      document.getElementById('emp-meta').textContent = data.message;
+      document.getElementById('emp-name').textContent = 'Employee not found';
+      document.getElementById('emp-meta').textContent = data.message || '';
     }
   } catch (err) {
-    document.getElementById('emp-name').textContent = 'Connection Error';
+    document.getElementById('emp-name').textContent = 'Connection error';
     document.getElementById('emp-meta').textContent = err.toString();
   }
 }
@@ -298,103 +254,75 @@ async function loadEmployee() {
 // ═══════════════════════════════════════════════════════════════
 
 async function submitAction(action) {
-  if (isSubmitting) return;
+  if (state.isSubmitting) return;
 
-  // ── Pre-flight GPS check ───────────────────────────────────
-  if (!gpsData) {
-    showAlert('error', '📍 GPS location required before attendance.');
+  if (!state.gpsData) {
+    showAlert('error', '📍 GPS location required. Tap the GPS box to enable it.');
+    return;
+  }
+  if (state.gpsAccuracy > GPS_THRESHOLD) {
+    showAlert('error', `🔴 GPS accuracy too low (±${Math.round(state.gpsAccuracy)}m). Move outdoors and retry.`);
     return;
   }
 
-  if (gpsData.accuracy > GPS_ACCURACY_ACCEPTABLE) {
-    showAlert('error', `🔴 GPS accuracy is too low (±${Math.round(gpsData.accuracy)}m). Move outdoors and try again.`);
-    return;
-  }
+  state.isSubmitting = true;
 
-  isSubmitting = true;
-
-  const spinnerId = action === 'checkin' ? 'ci-spinner' : 'co-spinner';
-  const labelId   = action === 'checkin' ? 'ci-label'   : 'co-label';
-  const btn       = document.getElementById('btn-' + action);
-  const spinner   = document.getElementById(spinnerId);
-  const label     = document.getElementById(labelId);
+  const btn     = document.getElementById('btn-' + action);
+  const spinner = document.getElementById(action === 'checkin' ? 'ci-spinner' : 'co-spinner');
+  const label   = document.getElementById(action === 'checkin' ? 'ci-label'   : 'co-label');
 
   btn.disabled          = true;
   spinner.style.display = 'block';
   label.style.opacity   = '0';
 
   try {
-    const response = await fetch('/api/attendance', {
-      method: 'POST',
+    const res  = await fetch('/api/attendance', {
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action,
         token:        employeeToken,
-        latitude:     gpsData.latitude,
-        longitude:    gpsData.longitude,
-        accuracy:     gpsData.accuracy,
-        locationName: gpsData.locationName,
+        latitude:     state.gpsData.latitude,
+        longitude:    state.gpsData.longitude,
+        accuracy:     state.gpsData.accuracy,
+        locationName: state.gpsData.locationName,
         ip:           userIP || 'unknown',
         userAgent:    navigator.userAgent,
       }),
     });
 
-    const data = await response.json();
+    const data = await res.json();
     console.log('[Submit]', action, data);
 
     if (!data.success) {
-      btn.disabled = false;
-      showAlert('error', '⚠️ ' + data.message);
-      isSubmitting = false;
-      spinner.style.display = 'none';
-      label.style.opacity   = '1';
-      return;
-    }
+      showAlert('error', '⚠️ ' + (data.message || 'Unknown error'));
+    } else {
+      showAlert('success', '✅ ' + data.message);
 
-    // ── Success path ───────────────────────────────────────
-    showAlert('success', '✅ ' + data.message);
-
-    const ciBtn        = document.getElementById('btn-checkin');
-    const coBtn        = document.getElementById('btn-checkout');
-    const checkinPill  = document.getElementById('checkin-pill');
-    const checkoutPill = document.getElementById('checkout-pill');
-
-    if (action === 'checkin') {
-      ciBtn.disabled          = true;
-      ciBtn.dataset.stateLocked = 'true';
-      coBtn.disabled          = false;
-      coBtn.dataset.stateLocked = '';
-      coBtn.dataset.stateAllowed = 'true';
-
-      if (checkinPill) {
-        checkinPill.className = 'status-pill done';
-        checkinPill.innerHTML = '<span class="pill-icon">✅</span>Checked In';
+      if (action === 'checkin') {
+        state.checkedIn   = true;
+        state.checkInTime = new Date().toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
+        _applyStatusUI();
       }
-      if (checkoutPill) {
-        checkoutPill.className = 'status-pill pending';
-        checkoutPill.innerHTML = '<span class="pill-icon">⏳</span>Awaiting Check-Out';
-      }
-    }
 
-    if (action === 'checkout') {
-      coBtn.disabled          = true;
-      coBtn.dataset.stateLocked = 'true';
-
-      if (checkoutPill) {
-        checkoutPill.className = 'status-pill done';
-        checkoutPill.innerHTML = `<span class="pill-icon">✅</span>Checked Out · ${data.hoursWorked}h`;
+      if (action === 'checkout') {
+        state.checkedOut   = true;
+        state.checkOutTime = new Date().toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
+        state.hoursWorked  = data.hoursWorked || null;
+        _applyStatusUI();
       }
     }
 
   } catch (err) {
     console.error('[Submit] Network error:', err);
     showAlert('error', '🔌 Network error. Please try again.');
-    btn.disabled = false;
   }
 
   spinner.style.display = 'none';
   label.style.opacity   = '1';
-  isSubmitting          = false;
+  state.isSubmitting    = false;
+
+  syncButtonState();  
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -413,18 +341,19 @@ function showAlert(type, msg) {
 //  PAGE INIT
 // ═══════════════════════════════════════════════════════════════
 
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
   const tokenInput = document.getElementById('token');
   if (tokenInput) tokenInput.value = employeeToken;
 
-  // Both buttons disabled until GPS + attendance state allow them
+  
   document.getElementById('btn-checkin').disabled  = true;
   document.getElementById('btn-checkout').disabled = true;
 
+  fetchIP();
   loadEmployee();
-  loadAttendanceState();   // sets data-state* flags; GPS will read them later
+  loadAttendanceState();
 
-  setGPS('waiting', 'Tap to Enable Location', 'Location permission is required');
+  setGPS('waiting', 'Tap to enable location', 'Location permission is required');
   const gpsBox = document.getElementById('gps-box');
   gpsBox.style.cursor = 'pointer';
   gpsBox.addEventListener('click', startGPSOnce);
