@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     const token = req.query.token || '';
   
     const url =
-      'https://script.google.com/macros/s/AKfycbzw7WLhirxNQTbYHiCD24ese2-LjPjRnc3UY4SlF2MT0xN7Uau_SAHw_05GndV8QSA/exec' +
+    process.env.APPS_SCRIPT_URL +
       '?action=employee&token=' +
       encodeURIComponent(token);
   
