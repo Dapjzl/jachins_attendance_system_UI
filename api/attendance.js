@@ -1,5 +1,7 @@
 export default async function handler(req, res) {
 
+  console.log('APPS_SCRIPT_URL:', process.env.APPS_SCRIPT_URL);
+
     try {
   
       const response = await fetch(
