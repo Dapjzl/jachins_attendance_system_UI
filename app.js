@@ -41,22 +41,18 @@ function syncButtonState() {
   const coBtn = document.getElementById('btn-checkout');
   if (!ciBtn || !coBtn) return;
 
-  const ready =
-    state.statusLoaded &&
-    state.gpsData &&
-    state.gpsAccuracy <= GPS_THRESHOLD;
-
-
-  if (!ready) {
+  // HARD BLOCK UNTIL READY
+  if (!state.statusLoaded || !state.gpsReady) {
     ciBtn.disabled = true;
     coBtn.disabled = true;
     console.log('[sync] waiting for full readiness');
     return;
   }
 
-  ciBtn.disabled = state.checkedIn;
+  const gpsOk = state.gpsAccuracy <= GPS_THRESHOLD;
 
-  coBtn.disabled = !(state.checkedIn && !state.checkedOut);
+  ciBtn.disabled = !(gpsOk && !state.checkedIn);
+  coBtn.disabled = !(gpsOk && state.checkedIn && !state.checkedOut);
 
   console.log('[sync]',
     'checkedIn:', state.checkedIn,
