@@ -24,6 +24,12 @@ const state = {
   isSubmitting: false,
 };
 
+function tryFinalSync() {
+  if (state.statusLoaded && state.gpsData) {
+    syncButtonState();
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  SINGLE SYNC FUNCTION
 //  Called after EVERY state mutation. This is the only place
@@ -35,19 +41,29 @@ function syncButtonState() {
   const coBtn = document.getElementById('btn-checkout');
   if (!ciBtn || !coBtn) return;
 
-  const gpsOk = state.gpsReady && state.gpsAccuracy <= GPS_THRESHOLD;
+  const ready =
+    state.statusLoaded &&
+    state.gpsData &&
+    state.gpsAccuracy <= GPS_THRESHOLD;
 
-  // Check In: needs GPS + not yet checked in
-  ciBtn.disabled = !(gpsOk && state.statusLoaded && !state.checkedIn);
 
-  // Check Out: needs GPS + checked in + not yet checked out
-  coBtn.disabled = !(gpsOk && state.statusLoaded && state.checkedIn && !state.checkedOut);
+  if (!ready) {
+    ciBtn.disabled = true;
+    coBtn.disabled = true;
+    console.log('[sync] waiting for full readiness');
+    return;
+  }
 
-  console.log('[sync] gpsOk:', gpsOk,
-    '| checkedIn:', state.checkedIn,
-    '| checkedOut:', state.checkedOut,
-    '| ciDisabled:', ciBtn.disabled,
-    '| coDisabled:', coBtn.disabled);
+  ciBtn.disabled = state.checkedIn;
+
+  coBtn.disabled = !(state.checkedIn && !state.checkedOut);
+
+  console.log('[sync]',
+    'checkedIn:', state.checkedIn,
+    'checkedOut:', state.checkedOut,
+    'ci:', ciBtn.disabled,
+    'co:', coBtn.disabled
+  );
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -129,6 +145,8 @@ function _onGPSSuccess(position) {
   const { latitude, longitude, accuracy } = position.coords;
   const meta = gpsAccuracyMeta(accuracy);
 
+  state.gpsReady = accuracy <= GPS_THRESHOLD;
+
   document.getElementById('gps-spinner').style.display = 'none';
 
   state.gpsAccuracy    = accuracy;
@@ -190,7 +208,9 @@ async function loadAttendanceState() {
     state.checkOutTime = data.checkOutTime || null;
     state.hoursWorked  = data.hoursWorked  || null;
     state.statusLoaded = true;
+    state.statusLoaded = true;
 
+    tryFinalSync();
     _applyStatusUI();
     syncButtonState();   // ← re-evaluate buttons after status loads
 
